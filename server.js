@@ -5,7 +5,32 @@ import contactRoute from "./routes/contact.js";
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/pak-peaks-client(-[a-z0-9]+)?(-haseebkhan)?\.vercel\.app$/.test(
+          origin
+        );
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
+  })
+);
+
 app.use(express.json({ limit: "10kb" }));
 
 app.get("/", (_req, res) => {
